@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mardikian Invoicing Tool</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- The reliable PDF libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <style>
         :root {
             --primary: #2c3e50;
@@ -106,14 +110,6 @@
             .preview-left, .preview-right { width: 100%; text-align: left; }
             .preview-right { margin-top: 20px; }
             #invoice-preview { padding: 20px; }
-        }
-
-        /* Hidden container used for creating the perfect PDF */
-        #pdf-export-container {
-            position: fixed;
-            left: -9999px;
-            top: 0;
-            width: 800px;
         }
     </style>
 </head>
@@ -421,89 +417,103 @@
         return `Invoice_${invNum}.pdf`;
     }
 
-    // Helper function to create a hidden desktop-sized clone for perfect PDF rendering
-    function generatePerfectPDF(returnBlob = false) {
-        return new Promise((resolve) => {
-            const original = document.getElementById('invoice-preview');
-            
-            // 1. Clone the preview node
-            const clone = original.cloneNode(true);
-            
-            // 2. Remove the buttons from the clone
-            const cloneButtons = clone.querySelector('.no-print');
-            if(cloneButtons) cloneButtons.remove();
-            
-            // 3. Style the clone to be an 800px off-screen box
-            clone.style.display = 'block';
-            clone.style.position = 'fixed';
-            clone.style.left = '-9999px';
-            clone.style.top = '0';
-            clone.style.width = '800px';
-            clone.style.maxWidth = '800px';
-            clone.style.boxShadow = 'none';
-            clone.style.margin = '0';
-            clone.style.padding = '40px';
-            
-            // 4. Force desktop layout for the header inside the clone
-            const topRow = clone.querySelector('.preview-top-row');
-            if(topRow) {
-                topRow.style.display = 'flex';
-                topRow.style.flexDirection = 'row';
-                topRow.style.justifyContent = 'space-between';
-            }
-            const leftCol = clone.querySelector('.preview-left');
-            if(leftCol) { leftCol.style.width = '50%'; leftCol.style.textAlign = 'left'; }
-            const rightCol = clone.querySelector('.preview-right');
-            if(rightCol) { rightCol.style.width = '45%'; rightCol.style.textAlign = 'right'; rightCol.style.marginTop = '0'; }
+    // --- NEW HIGH-RELIABILITY PDF GENERATOR ---
+    async function createPDFBlob() {
+        const original = document.getElementById('invoice-preview');
+        
+        // 1. Clone the invoice
+        const clone = original.cloneNode(true);
+        
+        // 2. Strip out the action buttons
+        const btns = clone.querySelector('.no-print');
+        if (btns) btns.remove();
+        
+        // 3. Force Desktop layout onto the clone
+        clone.style.display = 'block';
+        clone.style.position = 'fixed'; // fixed + top 0 + z-index -1 is the iOS trick
+        clone.style.top = '0';
+        clone.style.left = '0';
+        clone.style.zIndex = '-9999'; 
+        clone.style.width = '800px';
+        clone.style.maxWidth = '800px';
+        clone.style.backgroundColor = 'white';
+        clone.style.padding = '40px';
+        clone.style.boxShadow = 'none';
+        clone.style.margin = '0';
 
-            document.body.appendChild(clone);
+        // Force the header to use flexbox row instead of mobile column
+        const topRow = clone.querySelector('.preview-top-row');
+        if(topRow) {
+            topRow.style.display = 'flex';
+            topRow.style.flexDirection = 'row';
+            topRow.style.justifyContent = 'space-between';
+        }
+        const leftCol = clone.querySelector('.preview-left');
+        if(leftCol) { leftCol.style.width = '50%'; leftCol.style.textAlign = 'left'; }
+        const rightCol = clone.querySelector('.preview-right');
+        if(rightCol) { rightCol.style.width = '45%'; rightCol.style.textAlign = 'right'; rightCol.style.marginTop = '0'; }
 
-            // 5. Generate the PDF from the clone
-            const opt = {
-                margin:       0,
-                filename:     getFilename(),
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, windowWidth: 800 },
-                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-            };
+        document.body.appendChild(clone);
 
-            if (returnBlob) {
-                html2pdf().set(opt).from(clone).outputPdf('blob').then(blob => {
-                    document.body.removeChild(clone);
-                    resolve(blob);
-                });
-            } else {
-                html2pdf().set(opt).from(clone).save().then(() => {
-                    document.body.removeChild(clone);
-                    resolve(true);
-                });
-            }
-        });
+        // 4. Render to canvas
+        const canvas = await html2canvas(clone, { scale: 2, windowWidth: 800 });
+        
+        // 5. Generate US Letter PDF
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'pt', 'letter');
+        
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        
+        // 6. Clean up
+        document.body.removeChild(clone);
+        
+        return pdf.output('blob');
     }
 
-    function downloadPDF() {
-        generatePerfectPDF(false).then(() => {
+    async function downloadPDF() {
+        try {
+            const blob = await createPDFBlob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = getFilename();
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
             finalizeInvoiceNumber();
             alert("PDF Downloaded!");
-        });
+        } catch (err) {
+            alert("Error generating PDF: " + err.message);
+        }
     }
 
-    function sharePDF() {
-        generatePerfectPDF(true).then(blob => {
+    async function sharePDF() {
+        try {
+            const blob = await createPDFBlob();
             const file = new File([blob], getFilename(), { type: 'application/pdf' });
             
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                navigator.share({
+                await navigator.share({
                     files: [file],
-                    title: `Invoice`,
+                    title: `Invoice ${invoiceNumberStr}`,
                     text: `Here is the invoice.`
-                }).then(() => {
-                    finalizeInvoiceNumber();
-                }).catch(err => console.log('Share failed', err));
+                });
+                finalizeInvoiceNumber();
             } else {
-                alert("Your browser doesn't support direct sharing. Please use 'Save as PDF'.");
+                alert("Your device doesn't support direct sharing. The PDF has been downloaded to your device instead.");
+                await downloadPDF();
             }
-        });
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                alert("Error sharing PDF: " + err.message);
+            }
+        }
     }
 
     function printPDF() {
