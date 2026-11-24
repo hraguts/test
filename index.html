@@ -87,7 +87,6 @@
             .container { padding: 15px; }
             .grid, .grid-3 { grid-template-columns: 1fr; gap: 10px; }
             
-            /* Use Flexbox for line items so iOS doesn't hide them */
             .item-row { 
                 display: flex; 
                 flex-wrap: wrap; 
@@ -109,11 +108,13 @@
             #invoice-preview { padding: 20px; }
         }
 
-        /* Force Desktop Layout specifically for PDF generation */
-        .pdf-mode { width: 800px !important; max-width: 800px !important; padding: 40px !important; }
-        .pdf-mode .preview-top-row { display: flex !important; flex-direction: row !important; justify-content: space-between !important; }
-        .pdf-mode .preview-left { width: 50% !important; text-align: left !important; }
-        .pdf-mode .preview-right { width: 45% !important; text-align: right !important; margin-top: 0 !important; }
+        /* Hidden container used for creating the perfect PDF */
+        #pdf-export-container {
+            position: fixed;
+            left: -9999px;
+            top: 0;
+            width: 800px;
+        }
     </style>
 </head>
 <body>
@@ -420,45 +421,75 @@
         return `Invoice_${invNum}.pdf`;
     }
 
+    // Helper function to create a hidden desktop-sized clone for perfect PDF rendering
+    function generatePerfectPDF(returnBlob = false) {
+        return new Promise((resolve) => {
+            const original = document.getElementById('invoice-preview');
+            
+            // 1. Clone the preview node
+            const clone = original.cloneNode(true);
+            
+            // 2. Remove the buttons from the clone
+            const cloneButtons = clone.querySelector('.no-print');
+            if(cloneButtons) cloneButtons.remove();
+            
+            // 3. Style the clone to be an 800px off-screen box
+            clone.style.display = 'block';
+            clone.style.position = 'fixed';
+            clone.style.left = '-9999px';
+            clone.style.top = '0';
+            clone.style.width = '800px';
+            clone.style.maxWidth = '800px';
+            clone.style.boxShadow = 'none';
+            clone.style.margin = '0';
+            clone.style.padding = '40px';
+            
+            // 4. Force desktop layout for the header inside the clone
+            const topRow = clone.querySelector('.preview-top-row');
+            if(topRow) {
+                topRow.style.display = 'flex';
+                topRow.style.flexDirection = 'row';
+                topRow.style.justifyContent = 'space-between';
+            }
+            const leftCol = clone.querySelector('.preview-left');
+            if(leftCol) { leftCol.style.width = '50%'; leftCol.style.textAlign = 'left'; }
+            const rightCol = clone.querySelector('.preview-right');
+            if(rightCol) { rightCol.style.width = '45%'; rightCol.style.textAlign = 'right'; rightCol.style.marginTop = '0'; }
+
+            document.body.appendChild(clone);
+
+            // 5. Generate the PDF from the clone
+            const opt = {
+                margin:       0,
+                filename:     getFilename(),
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, windowWidth: 800 },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            if (returnBlob) {
+                html2pdf().set(opt).from(clone).outputPdf('blob').then(blob => {
+                    document.body.removeChild(clone);
+                    resolve(blob);
+                });
+            } else {
+                html2pdf().set(opt).from(clone).save().then(() => {
+                    document.body.removeChild(clone);
+                    resolve(true);
+                });
+            }
+        });
+    }
+
     function downloadPDF() {
-        const element = document.getElementById('invoice-preview');
-        const buttons = element.querySelector('.no-print');
-        buttons.style.display = 'none';
-
-        // FIX: Add the 'pdf-mode' class to force desktop layout on mobile
-        element.classList.add('pdf-mode');
-
-        html2pdf().set({
-            margin:       0,
-            filename:     getFilename(),
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, windowWidth: 800 }, // Force 800px render width
-            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-        }).from(element).save().then(() => {
-            buttons.style.display = 'block';
-            // FIX: Remove the class so the user's screen returns to normal mobile view
-            element.classList.remove('pdf-mode');
+        generatePerfectPDF(false).then(() => {
             finalizeInvoiceNumber();
             alert("PDF Downloaded!");
         });
     }
 
     function sharePDF() {
-        const element = document.getElementById('invoice-preview');
-        const buttons = element.querySelector('.no-print');
-        buttons.style.display = 'none';
-
-        // FIX: Add the 'pdf-mode' class to force desktop layout on mobile
-        element.classList.add('pdf-mode');
-
-        html2pdf().set({ 
-            margin: 0, 
-            filename: getFilename(), 
-            html2canvas: { scale: 2, windowWidth: 800 } // Force 800px render width
-        }).from(element).outputPdf('blob').then(blob => {
-            buttons.style.display = 'block';
-            element.classList.remove('pdf-mode'); // Revert to mobile view
-            
+        generatePerfectPDF(true).then(blob => {
             const file = new File([blob], getFilename(), { type: 'application/pdf' });
             
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -476,11 +507,7 @@
     }
 
     function printPDF() {
-        // Add pdf-mode temporarily for printing as well
-        const element = document.getElementById('invoice-preview');
-        element.classList.add('pdf-mode');
         window.print();
-        element.classList.remove('pdf-mode');
         finalizeInvoiceNumber();
     }
 
