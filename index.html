@@ -99,29 +99,21 @@
                 margin-bottom: 15px;
             }
             
-            .item-desc { 
-                width: 100%; 
-                margin-bottom: 5px;
-            }
-            
-            .item-qty, .item-price, .item-total { 
-                flex: 1; 
-                min-width: 0;
-                padding: 8px;
-            }
-            
-            .remove-btn { 
-                width: 40px; 
-                flex: none;
-                margin-top: 0;
-                height: auto;
-            }
+            .item-desc { width: 100%; margin-bottom: 5px; }
+            .item-qty, .item-price, .item-total { flex: 1; min-width: 0; padding: 8px; }
+            .remove-btn { width: 40px; flex: none; margin-top: 0; height: auto; }
             
             .preview-top-row { flex-direction: column; }
             .preview-left, .preview-right { width: 100%; text-align: left; }
             .preview-right { margin-top: 20px; }
             #invoice-preview { padding: 20px; }
         }
+
+        /* Force Desktop Layout specifically for PDF generation */
+        .pdf-mode { width: 800px !important; max-width: 800px !important; padding: 40px !important; }
+        .pdf-mode .preview-top-row { display: flex !important; flex-direction: row !important; justify-content: space-between !important; }
+        .pdf-mode .preview-left { width: 50% !important; text-align: left !important; }
+        .pdf-mode .preview-right { width: 45% !important; text-align: right !important; margin-top: 0 !important; }
     </style>
 </head>
 <body>
@@ -294,7 +286,6 @@
         nextMonth.setDate(nextMonth.getDate() + 30);
         document.getElementById('inv-due').value = nextMonth.toISOString().split('T')[0];
 
-        // This creates the first line item row
         addItemRow();
     }
 
@@ -434,14 +425,19 @@
         const buttons = element.querySelector('.no-print');
         buttons.style.display = 'none';
 
+        // FIX: Add the 'pdf-mode' class to force desktop layout on mobile
+        element.classList.add('pdf-mode');
+
         html2pdf().set({
             margin:       0,
             filename:     getFilename(),
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
+            html2canvas:  { scale: 2, windowWidth: 800 }, // Force 800px render width
             jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
         }).from(element).save().then(() => {
             buttons.style.display = 'block';
+            // FIX: Remove the class so the user's screen returns to normal mobile view
+            element.classList.remove('pdf-mode');
             finalizeInvoiceNumber();
             alert("PDF Downloaded!");
         });
@@ -452,8 +448,17 @@
         const buttons = element.querySelector('.no-print');
         buttons.style.display = 'none';
 
-        html2pdf().set({ margin: 0, filename: getFilename(), html2canvas: { scale: 2 } }).from(element).outputPdf('blob').then(blob => {
+        // FIX: Add the 'pdf-mode' class to force desktop layout on mobile
+        element.classList.add('pdf-mode');
+
+        html2pdf().set({ 
+            margin: 0, 
+            filename: getFilename(), 
+            html2canvas: { scale: 2, windowWidth: 800 } // Force 800px render width
+        }).from(element).outputPdf('blob').then(blob => {
             buttons.style.display = 'block';
+            element.classList.remove('pdf-mode'); // Revert to mobile view
+            
             const file = new File([blob], getFilename(), { type: 'application/pdf' });
             
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -471,7 +476,11 @@
     }
 
     function printPDF() {
+        // Add pdf-mode temporarily for printing as well
+        const element = document.getElementById('invoice-preview');
+        element.classList.add('pdf-mode');
         window.print();
+        element.classList.remove('pdf-mode');
         finalizeInvoiceNumber();
     }
 
