@@ -56,9 +56,12 @@
         /* --- INVOICE PREVIEW STYLES --- */
         #invoice-preview {
             display: none;
-            background: white; padding: 40px; color: #000;
+            background: white; 
+            padding: 40px; /* THIS ADDS THE MARGIN INSIDE THE PDF */
+            color: #000;
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             max-width: 800px; margin: 20px auto; box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-sizing: border-box;
         }
         
         .preview-top-row { display: flex; justify-content: space-between; margin-bottom: 40px; }
