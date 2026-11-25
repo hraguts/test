@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoicing Tool</title>
     
-    <!-- The reliable PDF libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -13,51 +12,96 @@
         :root {
             --primary: #2c3e50;
             --accent: #3498db;
+            --danger: #e74c3c;
             --bg: #f4f7f6;
             --text: #333;
+            --card-bg: #ffffff;
+            --border: #ccc;
+            --input-bg: #ffffff;
+            --input-text: #333;
+            --input-disabled: #eee;
+            --preview-bg: #ffffff;
+            --preview-text: #000;
+            --line-border: #ddd;
+            --note-text: #888;
         }
+
+        body.dark-mode {
+            --primary: #ecf0f1;
+            --accent: #2980b9;
+            --danger: #c0392b;
+            --bg: #1a1a1a;
+            --text: #e0e0e0;
+            --card-bg: #2d2d2d;
+            --border: #555;
+            --input-bg: #3a3a3a;
+            --input-text: #e0e0e0;
+            --input-disabled: #222;
+            --preview-bg: #2d2d2d;
+            --preview-text: #e0e0e0;
+            --line-border: #555;
+            --note-text: #aaa;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
             padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
         }
         .container {
             max-width: 800px;
             margin: 0 auto;
-            background: white;
+            background: var(--card-bg);
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            transition: background-color 0.3s;
         }
-        h1 { color: var(--primary); margin-top: 0; }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h1 { color: var(--primary); margin: 0; font-size: 24px; }
+        
+        .top-buttons { display: flex; gap: 10px; }
+        .reset-btn, .theme-btn { 
+            color: white; border: none; padding: 8px 16px; border-radius: 6px; 
+            font-weight: 600; cursor: pointer; font-size: 14px;
+        }
+        .reset-btn { background: var(--danger); }
+        .theme-btn { background: var(--primary); }
+        .reset-btn:hover, .theme-btn:hover { opacity: 0.9; }
+
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
-        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #666; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--text); opacity: 0.8; }
         input, textarea {
-            width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;
+            width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px;
             font-size: 14px; box-sizing: border-box; font-family: inherit;
+            background-color: var(--input-bg); color: var(--input-text);
         }
         input:focus { outline: 2px solid var(--accent); }
-        button {
+        input:disabled { background-color: var(--input-disabled); color: #777; cursor: not-allowed; }
+        
+        button.btn-primary {
             background: var(--accent); color: white; border: none; padding: 12px 20px;
             border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer;
             width: 100%; margin-top: 20px;
         }
-        button:hover { opacity: 0.9; }
+        button.btn-primary:hover { opacity: 0.9; }
         
-        /* --- DESKTOP LINE ITEMS --- */
         .item-row { display: grid; grid-template-columns: 3fr 1fr 1fr 1fr 40px; gap: 10px; margin-bottom: 10px; }
-        .remove-btn { background: #e74c3c; padding: 0; font-size: 18px; border-radius: 6px; }
-        .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; color: #444; }
+        .remove-btn { background: var(--danger); color: white; border: none; padding: 0; font-size: 18px; border-radius: 6px; cursor: pointer;}
+        .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; color: var(--text); }
         .checkbox-row input { width: auto; }
         
         /* --- INVOICE PREVIEW STYLES --- */
+        /* The preview always stays white to keep it looking like a printed document */
         #invoice-preview {
             display: none;
             background: white; 
-            padding: 40px; /* THIS ADDS THE MARGIN INSIDE THE PDF */
+            padding: 40px; 
             color: #000;
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             max-width: 800px; margin: 20px auto; box-shadow: 0 0 10px rgba(0,0,0,0.1);
@@ -65,7 +109,7 @@
         }
         
         .preview-top-row { display: flex; justify-content: space-between; margin-bottom: 40px; }
-        .preview-left { width: 50%; }
+        .preview-left { width: 50%; padding-top: 45px; }
         .preview-right { width: 45%; text-align: right; }
         .preview-title { font-size: 32px; font-weight: bold; color: #000; margin-bottom: 15px; }
         .supplier-name { font-weight: bold; font-size: 18px; margin-bottom: 5px; }
@@ -73,36 +117,32 @@
         .client-data { font-size: 14px; line-height: 1.6; color: #333; margin-top: 20px; }
         .client-label { font-size: 12px; font-weight: bold; color: #888; text-transform: uppercase; margin-bottom: 5px; }
         
-        .preview-table { width: 100%; border-collapse: collapse; margin-top: 30px; }
-        .preview-table th { border-bottom: 2px solid #000; text-align: left; padding: 10px 0; }
-        .preview-table td { border-bottom: 1px solid #ddd; padding: 10px 0; }
+        .preview-table { width: 100%; border-collapse: collapse; margin-top: 30px; font-size: 16px; }
+        .preview-table th { border-bottom: 2px solid #000; text-align: left; padding: 10px 0; color: #000; font-size: 16px; }
+        .preview-table td { border-bottom: 1px solid #ddd; padding: 10px 0; color: #000; font-size: 16px; }
         .preview-table th.right, .preview-table td.right { text-align: right; }
-        .totals { margin-top: 30px; text-align: right; font-size: 16px; line-height: 1.6; }
+        
+        .totals { margin-top: 30px; text-align: right; font-size: 16px; line-height: 1.6; color: #000; }
+        .total-box { display: inline-block; border: 2px solid #000; padding: 10px 20px; font-weight: bold; font-size: 20px; margin-top: 10px; }
         
         .signature-block { margin-top: 60px; display: flex; justify-content: flex-start; }
         .signature-inner { text-align: center; width: 250px; }
         .signature-dots { border-bottom: 1px dotted #000; height: 40px; margin-bottom: 5px; }
-        .signature-name { font-weight: bold; font-size: 14px; text-transform: uppercase; }
+        .signature-name { font-weight: bold; font-size: 14px; text-transform: uppercase; color: #000; }
         .signature-title { font-size: 12px; color: #666; }
 
-        .footer-note { margin-top: 50px; font-size: 11px; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+        .footer-note { margin-top: 50px; font-size: 10px; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
         .hidden { display: none !important; }
         
-        /* --- MOBILE ADJUSTMENTS (iOS FIX) --- */
         @media (max-width: 600px) {
             body { padding: 10px; }
             .container { padding: 15px; }
             .grid, .grid-3 { grid-template-columns: 1fr; gap: 10px; }
             
             .item-row { 
-                display: flex; 
-                flex-wrap: wrap; 
-                gap: 8px;
-                background: #f9f9f9;
-                padding: 12px;
-                border-radius: 8px;
-                border: 1px solid #eee;
-                margin-bottom: 15px;
+                display: flex; flex-wrap: wrap; gap: 8px;
+                background: var(--bg); padding: 12px; border-radius: 8px;
+                border: 1px solid var(--border); margin-bottom: 15px;
             }
             
             .item-desc { width: 100%; margin-bottom: 5px; }
@@ -111,6 +151,7 @@
             
             .preview-top-row { flex-direction: column; }
             .preview-left, .preview-right { width: 100%; text-align: left; }
+            .preview-left { padding-top: 0; }
             .preview-right { margin-top: 20px; }
             #invoice-preview { padding: 20px; }
         }
@@ -119,7 +160,14 @@
 <body>
 
 <div class="container" id="app-form">
-    <h1>Invoicing Tool</h1>
+    
+    <div class="top-bar">
+        <h1>Invoicing Tool</h1>
+        <div class="top-buttons">
+            <button type="button" class="theme-btn" onclick="toggleDarkMode()">🌓 Theme</button>
+            <button type="button" class="reset-btn" onclick="resetApp(true)">Reset App</button>
+        </div>
+    </div>
     
     <div class="grid-3" style="margin-bottom: 20px;">
         <div>
@@ -133,7 +181,7 @@
         <div>
             <label style="display:flex; justify-content:space-between; align-items:center;">
                 Due Date
-                <span style="font-weight:normal; font-size:12px; color:#666; cursor:pointer;">
+                <span style="font-weight:normal; font-size:12px; cursor:pointer;">
                     <input type="checkbox" id="toggle-due-date" checked style="width:auto; margin-right:4px; vertical-align:middle;" onchange="toggleDueDate()"> Show
                 </span>
             </label>
@@ -152,11 +200,21 @@
             <label style="margin-top:10px;">Email</label>
             <input type="email" id="sup-email" placeholder="you@example.com">
             <label style="margin-top:10px;">Phone</label>
-            <input type="tel" id="sup-phone" placeholder="+00 400 00 00 00">
-            <label style="margin-top:10px;">VAT / Company ID (Optional)</label>
-            <input type="text" id="sup-vat" placeholder="BE0123456789">
+            <input type="tel" id="sup-phone" placeholder="+32 400 00 00 00">
             
-            <div class="checkbox-row">
+            <div class="checkbox-row" style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px;">
+                <input type="checkbox" id="sup-vat-toggle" checked onchange="toggleSupVat()">
+                <label for="sup-vat-toggle" style="margin:0; cursor:pointer; font-weight: 600;">Show VAT Number</label>
+            </div>
+            <input type="text" id="sup-vat" placeholder="BE0123456789" style="margin-top: 5px;">
+
+            <div class="checkbox-row" style="margin-top: 15px;">
+                <input type="checkbox" id="sup-tic-toggle" onchange="toggleSupTic()">
+                <label for="sup-tic-toggle" style="margin:0; cursor:pointer; font-weight: 600;">Show TIC</label>
+            </div>
+            <input type="text" id="sup-tic" placeholder="TIC Number" style="margin-top: 5px;" disabled>
+            
+            <div class="checkbox-row" style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px;">
                 <input type="checkbox" id="sup-signature-toggle" checked>
                 <label for="sup-signature-toggle" style="margin:0; cursor:pointer;">Include signature block on PDF</label>
             </div>
@@ -172,8 +230,15 @@
             <input type="email" id="cl-email">
             <label style="margin-top:10px;">Phone</label>
             <input type="tel" id="cl-phone">
+            
             <label style="margin-top:10px;">VAT / Company ID (Optional)</label>
             <input type="text" id="cl-vat">
+
+            <div class="checkbox-row" style="margin-top: 15px;">
+                <input type="checkbox" id="cl-trade-toggle" onchange="toggleClTrade()">
+                <label for="cl-trade-toggle" style="margin:0; cursor:pointer; font-weight: 600;">Show Trade Register Number</label>
+            </div>
+            <input type="text" id="cl-trade" placeholder="X00/00000/0000" style="margin-top: 5px;" disabled>
         </div>
     </div>
 
@@ -181,14 +246,14 @@
     <div id="items-container">
         <!-- Rows injected by JS -->
     </div>
-    <button type="button" onclick="addItemRow()" style="background: #666; font-size: 14px; padding: 8px;">+ Add Item</button>
+    <button type="button" onclick="addItemRow()" style="background: #666; color:white; border:none; border-radius:6px; font-size: 14px; padding: 10px; cursor:pointer;">+ Add Item</button>
 
     <div style="margin-top: 20px;">
         <label>VAT Rate (%)</label>
         <input type="number" id="vat-rate" value="0" step="0.1" style="width: 100px;">
     </div>
 
-    <button onclick="generateInvoice()">Preview & Generate PDF</button>
+    <button class="btn-primary" onclick="generateInvoice()">Preview & Generate PDF</button>
 </div>
 
 <div id="invoice-preview">
@@ -199,7 +264,8 @@
             <div id="p-sup-city" style="font-size: 14px; color: #444;"></div>
             <div id="p-sup-email" style="font-size: 14px; color: #444; margin-top: 5px;"></div>
             <div id="p-sup-phone" style="font-size: 14px; color: #444;"></div>
-            <div id="p-sup-vat" style="font-size: 14px; color: #444;"></div>
+            <div id="p-sup-vat" style="font-size: 14px; color: #444; margin-top: 5px;"></div>
+            <div id="p-sup-tic" style="font-size: 14px; color: #444;"></div>
         </div>
         <div class="preview-right">
             <div class="preview-title">INVOICE</div>
@@ -216,6 +282,7 @@
                 <div id="p-cl-email"></div>
                 <div id="p-cl-phone"></div>
                 <div id="p-cl-vat"></div>
+                <div id="p-cl-trade"></div>
             </div>
         </div>
     </div>
@@ -234,8 +301,8 @@
 
     <div class="totals">
         <div>Subtotal: <span id="p-subtotal"></span></div>
-        <div>VAT: <span id="p-vat"></span></div>
-        <div style="font-weight: bold; font-size: 20px; margin-top: 10px;">Total: <span id="p-total"></span></div>
+        <div>VAT: <span id="p-vat"></span></div> <!-- Label is now hardcoded here -->
+        <div class="total-box">Total: <span id="p-total"></span></div>
     </div>
 
     <div id="p-signature-block" class="signature-block" style="display: none;">
@@ -247,14 +314,14 @@
     </div>
 
     <div class="footer-note">
-          OSKi Invoicing tool — developed by H.O.
+        OSKi Invoicing tool — developed by H.O.
     </div>
 
     <div style="text-align: center; margin-top: 30px;" class="no-print">
-        <button onclick="downloadPDF()" style="width: auto; padding: 12px 30px; background: #27ae60;">Save as PDF</button>
-        <button onclick="sharePDF()" style="width: auto; padding: 12px 30px; background: #8e44ad;">Share / Email</button>
-        <button onclick="printPDF()" style="width: auto; padding: 12px 30px; background: #e67e22;">Print</button>
-        <button onclick="resetApp()" style="width: auto; padding: 12px 30px; background: #7f8c8d; margin-top: 10px;">Back to Edit</button>
+        <button onclick="downloadPDF()" style="width: auto; padding: 12px 30px; background: #27ae60; color:white; border:none; border-radius:6px; font-weight:600; cursor:pointer;">Save as PDF</button>
+        <button onclick="sharePDF()" style="width: auto; padding: 12px 30px; background: #8e44ad; color:white; border:none; border-radius:6px; font-weight:600; cursor:pointer;">Share / Email</button>
+        <button onclick="printPDF()" style="width: auto; padding: 12px 30px; background: #e67e22; color:white; border:none; border-radius:6px; font-weight:600; cursor:pointer;">Print</button>
+        <button onclick="resetApp(false)" style="width: auto; padding: 12px 30px; background: #7f8c8d; color:white; border:none; border-radius:6px; font-weight:600; cursor:pointer; margin-top: 10px;">Back to Edit</button>
     </div>
 </div>
 
@@ -262,16 +329,23 @@
     let invoiceNumberStr = "";
     let hasSavedPdf = false;
 
-    window.onload = function() {
-        const savedSupplier = JSON.parse(localStorage.getItem('mardikian_supplier')) || {};
-        document.getElementById('sup-name').value = savedSupplier.name || '';
-        document.getElementById('sup-address').value = savedSupplier.address || '';
-        document.getElementById('sup-city').value = savedSupplier.city || '';
-        document.getElementById('sup-email').value = savedSupplier.email || '';
-        document.getElementById('sup-phone').value = savedSupplier.phone || '';
-        document.getElementById('sup-vat').value = savedSupplier.vat || '';
-        document.getElementById('sup-signature-toggle').checked = savedSupplier.includeSignature !== false;
+    // Initialize Theme
+    if (localStorage.getItem('mardikian_theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
 
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        if (document.body.classList.contains('dark-mode')) {
+            localStorage.setItem('mardikian_theme', 'dark');
+        } else {
+            localStorage.setItem('mardikian_theme', 'light');
+        }
+    }
+
+    window.onload = function() {
+        loadSupplierData();
+        
         let lastNum = parseInt(localStorage.getItem('mardikian_last_inv_seq')) || 0;
         let nextNum = lastNum + 1;
         let currentYear = new Date().getFullYear();
@@ -289,16 +363,52 @@
         addItemRow();
     }
 
+    function loadSupplierData() {
+        const savedSupplier = JSON.parse(localStorage.getItem('mardikian_supplier')) || {};
+        document.getElementById('sup-name').value = savedSupplier.name || '';
+        document.getElementById('sup-address').value = savedSupplier.address || '';
+        document.getElementById('sup-city').value = savedSupplier.city || '';
+        document.getElementById('sup-email').value = savedSupplier.email || '';
+        document.getElementById('sup-phone').value = savedSupplier.phone || '';
+        
+        document.getElementById('sup-vat-toggle').checked = savedSupplier.showVat !== false;
+        document.getElementById('sup-vat').value = savedSupplier.vat || '';
+        
+        document.getElementById('sup-tic-toggle').checked = savedSupplier.showTic || false;
+        document.getElementById('sup-tic').value = savedSupplier.tic || '';
+        
+        document.getElementById('sup-signature-toggle').checked = savedSupplier.includeSignature !== false;
+        
+        toggleSupVat();
+        toggleSupTic();
+    }
+
     function toggleDueDate() {
         const isChecked = document.getElementById('toggle-due-date').checked;
         const dueDateInput = document.getElementById('inv-due');
-        if (isChecked) {
-            dueDateInput.style.opacity = "1";
-            dueDateInput.disabled = false;
-        } else {
-            dueDateInput.style.opacity = "0.3";
-            dueDateInput.disabled = true;
-        }
+        dueDateInput.disabled = !isChecked;
+        dueDateInput.style.opacity = isChecked ? "1" : "0.3";
+    }
+
+    function toggleSupVat() {
+        const isChecked = document.getElementById('sup-vat-toggle').checked;
+        const input = document.getElementById('sup-vat');
+        input.disabled = !isChecked;
+        input.style.opacity = isChecked ? "1" : "0.3";
+    }
+
+    function toggleSupTic() {
+        const isChecked = document.getElementById('sup-tic-toggle').checked;
+        const input = document.getElementById('sup-tic');
+        input.disabled = !isChecked;
+        input.style.opacity = isChecked ? "1" : "0.3";
+    }
+
+    function toggleClTrade() {
+        const isChecked = document.getElementById('cl-trade-toggle').checked;
+        const input = document.getElementById('cl-trade');
+        input.disabled = !isChecked;
+        input.style.opacity = isChecked ? "1" : "0.3";
     }
 
     function addItemRow() {
@@ -309,7 +419,7 @@
             <input type="text" placeholder="Description" class="item-desc">
             <input type="number" placeholder="Qty" value="1" min="1" class="item-qty" oninput="calculateLiveTotals()">
             <input type="number" placeholder="Price" value="0.00" step="0.01" class="item-price" oninput="calculateLiveTotals()">
-            <input type="text" class="item-total" value="0.00" readonly style="background:#eee; text-align:right;">
+            <input type="text" class="item-total" value="0.00" readonly style="background:var(--input-disabled); text-align:right;">
             <button class="remove-btn" onclick="this.parentElement.remove()">×</button>
         `;
         container.appendChild(row);
@@ -334,25 +444,38 @@
             city: document.getElementById('sup-city').value,
             email: document.getElementById('sup-email').value,
             phone: document.getElementById('sup-phone').value,
+            showVat: document.getElementById('sup-vat-toggle').checked,
             vat: document.getElementById('sup-vat').value,
+            showTic: document.getElementById('sup-tic-toggle').checked,
+            tic: document.getElementById('sup-tic').value,
             includeSignature: document.getElementById('sup-signature-toggle').checked
         };
         localStorage.setItem('mardikian_supplier', JSON.stringify(supplierData));
 
+        // Supplier Details
         document.getElementById('p-sup-name').textContent = supName;
         document.getElementById('p-sup-address').textContent = supplierData.address;
         document.getElementById('p-sup-city').textContent = supplierData.city;
         document.getElementById('p-sup-email').textContent = supplierData.email;
         document.getElementById('p-sup-phone').textContent = supplierData.phone ? "Tel: " + supplierData.phone : "";
-        document.getElementById('p-sup-vat').textContent = supplierData.vat;
+        
+        document.getElementById('p-sup-vat').textContent = (supplierData.showVat && supplierData.vat) ? supplierData.vat : "";
+        document.getElementById('p-sup-tic').textContent = (supplierData.showTic && supplierData.tic) ? "TIC: " + supplierData.tic : "";
 
+        // Client Details
         document.getElementById('p-cl-name').textContent = document.getElementById('cl-name').value;
         document.getElementById('p-cl-address').textContent = document.getElementById('cl-address').value;
         document.getElementById('p-cl-city').textContent = document.getElementById('cl-city').value;
         document.getElementById('p-cl-email').textContent = document.getElementById('cl-email').value;
         document.getElementById('p-cl-phone').textContent = document.getElementById('cl-phone').value ? "Tel: " + document.getElementById('cl-phone').value : "";
-        document.getElementById('p-cl-vat').textContent = document.getElementById('cl-vat').value;
+        const clVatVal = document.getElementById('cl-vat').value;
+        document.getElementById('p-cl-vat').textContent = clVatVal ? "VAT: " + clVatVal : "";
+        
+        const showClTrade = document.getElementById('cl-trade-toggle').checked;
+        const clTradeVal = document.getElementById('cl-trade').value;
+        document.getElementById('p-cl-trade').textContent = (showClTrade && clTradeVal) ? "Trade Reg. No. : " + clTradeVal : "";
 
+        // Meta Data
         const invDateRaw = document.getElementById('inv-date').value;
         const invDueRaw = document.getElementById('inv-due').value;
         const manualInvNum = document.getElementById('inv-number').value;
@@ -362,13 +485,14 @@
         document.getElementById('p-inv-date').textContent = invDateRaw ? invDateRaw.split('-').reverse().join('/') : "";
         
         const dueDateContainer = document.getElementById('p-due-container');
-        if (showDueDate) {
+        if (showDueDate && invDueRaw) {
             dueDateContainer.style.display = 'block';
-            document.getElementById('p-inv-due').textContent = invDueRaw ? invDueRaw.split('-').reverse().join('/') : "";
+            document.getElementById('p-inv-due').textContent = invDueRaw.split('-').reverse().join('/');
         } else {
-            dueDateContainer.style.display = 'none';
+            dueDateContainer.style.display = 'none'; 
         }
 
+        // Signature
         const sigBlock = document.getElementById('p-signature-block');
         if(supplierData.includeSignature) {
             sigBlock.style.display = 'flex';
@@ -377,6 +501,7 @@
             sigBlock.style.display = 'none';
         }
 
+        // Items (Removed € from individual line items)
         const tbody = document.getElementById('p-items-body');
         tbody.innerHTML = '';
         let subtotal = 0;
@@ -393,8 +518,8 @@
                     <tr>
                         <td>${desc}</td>
                         <td class="right">${qty}</td>
-                        <td class="right">€${price.toFixed(2)}</td>
-                        <td class="right">€${total.toFixed(2)}</td>
+                        <td class="right">${price.toFixed(2)}</td>
+                        <td class="right">${total.toFixed(2)}</td>
                     </tr>
                 `;
             }
@@ -404,9 +529,12 @@
         const vatAmount = subtotal * (vatRate / 100);
         const finalTotal = subtotal + vatAmount;
 
-        document.getElementById('p-subtotal').textContent = "€" + subtotal.toFixed(2);
-        document.getElementById('p-vat').textContent = "€" + vatAmount.toFixed(2);
-        document.getElementById('p-total').textContent = "€" + finalTotal.toFixed(2);
+        document.getElementById('p-subtotal').textContent = subtotal.toFixed(2) + " €";
+        
+        // ALWAYS SHOW VAT (Label is in HTML now)
+        document.getElementById('p-vat').textContent = vatAmount.toFixed(2) + " €";
+        
+        document.getElementById('p-total').textContent = finalTotal.toFixed(2) + " €";
 
         document.getElementById('app-form').classList.add('hidden');
         document.getElementById('invoice-preview').style.display = 'block';
@@ -420,31 +548,27 @@
         return `Invoice_${invNum}.pdf`;
     }
 
-    // --- NEW HIGH-RELIABILITY PDF GENERATOR ---
     async function createPDFBlob() {
         const original = document.getElementById('invoice-preview');
-        
-        // 1. Clone the invoice
         const clone = original.cloneNode(true);
         
-        // 2. Strip out the action buttons
         const btns = clone.querySelector('.no-print');
         if (btns) btns.remove();
         
-        // 3. Force Desktop layout onto the clone
         clone.style.display = 'block';
-        clone.style.position = 'fixed'; // fixed + top 0 + z-index -1 is the iOS trick
+        clone.style.position = 'fixed'; 
         clone.style.top = '0';
         clone.style.left = '0';
         clone.style.zIndex = '-9999'; 
         clone.style.width = '800px';
         clone.style.maxWidth = '800px';
-        clone.style.backgroundColor = 'white';
+        // Force white background for PDF regardless of dark mode
+        clone.style.backgroundColor = '#ffffff'; 
+        clone.style.color = '#000000';
         clone.style.padding = '40px';
         clone.style.boxShadow = 'none';
         clone.style.margin = '0';
 
-        // Force the header to use flexbox row instead of mobile column
         const topRow = clone.querySelector('.preview-top-row');
         if(topRow) {
             topRow.style.display = 'flex';
@@ -452,16 +576,14 @@
             topRow.style.justifyContent = 'space-between';
         }
         const leftCol = clone.querySelector('.preview-left');
-        if(leftCol) { leftCol.style.width = '50%'; leftCol.style.textAlign = 'left'; }
+        if(leftCol) { leftCol.style.width = '50%'; leftCol.style.textAlign = 'left'; leftCol.style.paddingTop = '45px'; }
         const rightCol = clone.querySelector('.preview-right');
         if(rightCol) { rightCol.style.width = '45%'; rightCol.style.textAlign = 'right'; rightCol.style.marginTop = '0'; }
 
         document.body.appendChild(clone);
 
-        // 4. Render to canvas
         const canvas = await html2canvas(clone, { scale: 2, windowWidth: 800 });
         
-        // 5. Generate US Letter PDF
         const imgData = canvas.toDataURL('image/jpeg', 0.98);
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('p', 'pt', 'letter');
@@ -471,7 +593,6 @@
         
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
         
-        // 6. Clean up
         document.body.removeChild(clone);
         
         return pdf.output('blob');
@@ -531,10 +652,21 @@
         localStorage.setItem('mardikian_last_inv_seq', lastNum + 1);
     }
 
-    function resetApp() {
-        if(!hasSavedPdf && !confirm("You haven't downloaded the PDF yet. Go back to edit?")) {
+    function resetApp(fullReset = false) {
+        if (!fullReset) {
+            if(!hasSavedPdf && !confirm("You haven't downloaded the PDF yet. Go back to edit?")) {
+                return;
+            }
+        } else {
+            if(!confirm("Are you sure you want to reset all fields and clear the invoice number? This cannot be undone.")) {
+                return;
+            }
+            localStorage.removeItem('mardikian_supplier');
+            localStorage.removeItem('mardikian_last_inv_seq');
+            window.location.reload();
             return;
         }
+
         document.getElementById('invoice-preview').style.display = 'none';
         document.getElementById('app-form').classList.remove('hidden');
         
@@ -544,6 +676,9 @@
         document.getElementById('cl-email').value = '';
         document.getElementById('cl-phone').value = '';
         document.getElementById('cl-vat').value = '';
+        document.getElementById('cl-trade').value = '';
+        document.getElementById('cl-trade-toggle').checked = false;
+        toggleClTrade();
         
         document.getElementById('items-container').innerHTML = '';
         addItemRow();
