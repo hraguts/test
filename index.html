@@ -1,3 +1,8 @@
+Here is the fully updated script. I have fixed the alignment so the "Bill To" block is properly aligned to the right side of the page (but with the text itself left-aligned under its own heading), and I have wrapped the entire Line Items table in a clean, bordered box.
+
+Replace your entire `index.html` with this final version:
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -108,28 +113,40 @@
         }
         
         .preview-top-row { display: flex; justify-content: space-between; margin-bottom: 40px; }
-        .preview-left { width: 50%; padding-top: 45px; }
-        .preview-right { width: 45%; text-align: right; }
+        .preview-left { width: 45%; padding-top: 45px; }
+        
+        /* Fixed alignment for the right column */
+        .preview-right { 
+            width: 45%; 
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end; /* Aligns the whole block to the right */
+        }
         
         .preview-title { font-size: 32px; font-weight: bold; color: #000; margin-bottom: 15px; }
         .supplier-name { font-weight: bold; font-size: 18px; margin-bottom: 5px; }
-        .meta-data { font-size: 14px; line-height: 1.6; color: #333; margin-bottom: 25px; }
+        .meta-data { font-size: 14px; line-height: 1.6; color: #333; margin-bottom: 25px; text-align: right; }
         
-        /* Fixed: Client data is now left-aligned */
-        .client-data { font-size: 14px; line-height: 1.6; color: #333; text-align: left; }
+        /* Client data is visually on the right, but text is left-aligned */
+        .client-data { font-size: 14px; line-height: 1.6; color: #333; text-align: left; width: 100%; }
         .client-label { font-size: 12px; font-weight: bold; color: #888; text-transform: uppercase; margin-bottom: 5px; text-align: left; }
         
-        /* Table styling with forced minimum height */
-        .preview-table { width: 100%; border-collapse: collapse; margin-top: 30px; font-size: 13px; }
-        .preview-table th { border-bottom: 2px solid #000; text-align: left; padding: 10px 0; color: #000; }
-        .preview-table td { border-bottom: 1px solid #ddd; padding: 10px 0; color: #000; }
+        /* Table styling with borders around the entire item area */
+        .table-container {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 30px;
+        }
+
+        .preview-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 0; }
+        .preview-table th { border-bottom: 2px solid #000; text-align: left; padding: 12px 15px; color: #000; background: #f9f9f9; }
+        .preview-table td { border-bottom: 1px solid #eee; padding: 12px 15px; color: #000; }
         .preview-table th.right, .preview-table td.right { text-align: right; }
         
-        /* FORCE MINIMUM HEIGHT FOR TABLE BODY */
         .table-body-wrapper {
-            min-height: 250px; /* Creates empty space below items */
-            display: block;
-            width: 100%;
+            min-height: 200px; /* Creates empty space below items */
+            display: table-row-group;
         }
         
         .totals { margin-top: 30px; text-align: right; font-size: 16px; line-height: 1.6; color: #000; }
@@ -160,9 +177,10 @@
             .remove-btn { width: 40px; flex: none; margin-top: 0; height: auto; }
             
             .preview-top-row { flex-direction: column; }
-            .preview-left, .preview-right { width: 100%; text-align: left; }
+            .preview-left, .preview-right { width: 100%; text-align: left; align-items: flex-start; }
             .preview-left { padding-top: 0; }
             .preview-right { margin-top: 20px; }
+            .meta-data { text-align: left; }
             #invoice-preview { padding: 20px; }
         }
     </style>
@@ -200,14 +218,12 @@
         <div>
             <label>Currency</label>
             <select id="currency-select">
-                <!-- Western -->
                 <option value="€">EUR (€)</option>
                 <option value="$">USD ($)</option>
                 <option value="£">GBP (£)</option>
                 <option value="CHF">CHF (CHF)</option>
                 <option value="CAD$">CAD (C$)</option>
                 <option value="AUD$">AUD (A$)</option>
-                <!-- Middle East -->
                 <option value="AED">AED (د.إ)</option>
                 <option value="SAR">SAR (﷼)</option>
                 <option value="QAR">QAR (ر.ق)</option>
@@ -215,7 +231,6 @@
                 <option value="BHD">BHD (.د.ب)</option>
                 <option value="OMR">OMR (ر.ع.)</option>
                 <option value="ILS">ILS (₪)</option>
-                <!-- Asia -->
                 <option value="¥">JPY (¥)</option>
                 <option value="CNY¥">CNY (¥)</option>
                 <option value="₹">INR (₹)</option>
@@ -242,7 +257,7 @@
             <label style="margin-top:10px;">Email</label>
             <input type="email" id="sup-email" placeholder="you@example.com">
             <label style="margin-top:10px;">Phone</label>
-            <input type="tel" id="sup-phone" placeholder="+00 400 00 00 00">
+            <input type="tel" id="sup-phone" placeholder="+32 400 00 00 00">
             
             <div class="checkbox-row" style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px;">
                 <input type="checkbox" id="sup-vat-toggle" checked onchange="toggleSupVat()">
@@ -317,7 +332,6 @@
                 <span id="p-due-container"><strong>Due Date:</strong> <span id="p-inv-due"></span></span>
             </div>
             
-            <!-- Client data is now left aligned inside the right column -->
             <div class="client-data">
                 <div class="client-label">Bill To:</div>
                 <div style="font-weight: bold; font-size: 16px;" id="p-cl-name"></div>
@@ -331,17 +345,20 @@
         </div>
     </div>
 
-    <table class="preview-table">
-        <thead>
-            <tr>
-                <th>Description</th>
-                <th class="right">Qty</th>
-                <th class="right">Price <span class="currency-symbol-header"></span></th>
-                <th class="right">Total <span class="currency-symbol-header"></span></th>
-            </tr>
-        </thead>
-        <tbody id="p-items-body" class="table-body-wrapper"></tbody>
-    </table>
+    <!-- Wrapped Table in a box -->
+    <div class="table-container">
+        <table class="preview-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th class="right">Qty</th>
+                    <th class="right">Price <span class="currency-symbol-header"></span></th>
+                    <th class="right">Total <span class="currency-symbol-header"></span></th>
+                </tr>
+            </thead>
+            <tbody id="p-items-body" class="table-body-wrapper"></tbody>
+        </table>
+    </div>
 
     <div class="totals">
         <div>Subtotal: <span id="p-subtotal"></span></div>
@@ -631,9 +648,25 @@
             topRow.style.justifyContent = 'space-between';
         }
         const leftCol = clone.querySelector('.preview-left');
-        if(leftCol) { leftCol.style.width = '50%'; leftCol.style.textAlign = 'left'; leftCol.style.paddingTop = '45px'; }
+        if(leftCol) { leftCol.style.width = '45%'; leftCol.style.textAlign = 'left'; leftCol.style.paddingTop = '45px'; }
+        
         const rightCol = clone.querySelector('.preview-right');
-        if(rightCol) { rightCol.style.width = '45%'; rightCol.style.textAlign = 'right'; rightCol.style.marginTop = '0'; }
+        if(rightCol) { 
+            rightCol.style.width = '45%'; 
+            rightCol.style.marginTop = '0'; 
+            rightCol.style.display = 'flex'; 
+            rightCol.style.flexDirection = 'column'; 
+            rightCol.style.alignItems = 'flex-end'; 
+        }
+        const metaDataClone = clone.querySelector('.meta-data');
+        if(metaDataClone) {
+            metaDataClone.style.textAlign = 'right';
+        }
+        const clientDataClone = clone.querySelector('.client-data');
+        if(clientDataClone) {
+            clientDataClone.style.textAlign = 'left';
+            clientDataClone.style.width = '100%';
+        }
 
         document.body.appendChild(clone);
 
@@ -753,3 +786,4 @@
 </script>
 </body>
 </html>
+```
