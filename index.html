@@ -110,7 +110,6 @@
         .preview-top-row { display: flex; justify-content: space-between; margin-bottom: 40px; }
         .preview-left { width: 45%; padding-top: 45px; }
         
-        /* Fixed alignment for the right column */
         .preview-right { 
             width: 45%; 
             display: flex;
@@ -126,10 +125,10 @@
         .client-data { font-size: 14px; line-height: 1.6; color: #333; text-align: left; width: 100%; }
         .client-label { font-size: 12px; font-weight: bold; color: #888; text-transform: uppercase; margin-bottom: 5px; text-align: left; }
         
-        /* Table styling with fixed layout and vertical separators extending to bottom */
+        /* Table styling */
         .table-container {
             border: 1px solid #ccc;
-            border-radius: 0px;
+            border-radius: 8px;
             overflow: hidden;
             height: 350px;
             margin-top: 30px;
@@ -179,7 +178,7 @@
         
         /* Spacer row styles */
         .spacer-row td {
-            border-bottom: none !important; /* Removes the horizontal line for the empty space */
+            border-bottom: none !important;
         }
         
         /* Totals block aligned to match the Total column */
@@ -378,8 +377,22 @@
         <label>VAT Rate (%)</label>
         <input type="number" id="vat-rate" value="0" step="0.1" style="width: 100px;">
     </div>
+    
+    <!-- Layout Toggles -->
+    <div class="checkbox-row" style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px;">
+        <input type="checkbox" id="toggle-qty" checked onchange="toggleInputs()">
+        <label for="toggle-qty" style="margin:0; cursor:pointer; font-weight: 600;">Show Qty Column</label>
+    </div>
+    <div class="checkbox-row" style="margin-top: 10px;">
+        <input type="checkbox" id="toggle-price" checked onchange="toggleInputs()">
+        <label for="toggle-price" style="margin:0; cursor:pointer; font-weight: 600;">Show Price Column</label>
+    </div>
 
     <button class="btn-primary" onclick="generateInvoice()">Preview & Generate PDF</button>
+
+    <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--note-text);">
+        Invoicing Tool - © H.O.(OSKi)
+    </div>
 </div>
 
 <div id="invoice-preview">
@@ -414,16 +427,11 @@
         </div>
     </div>
 
-    <!-- Wrapped Table with flex layout to stretch rows -->
+    <!-- Wrapped Table with fixed header and dynamic body -->
     <div class="table-container">
         <table class="preview-table">
-            <thead>
-                <tr>
-                    <th style="width: 50%;">Description</th>
-                    <th class="right" style="width: 10%;">Qty</th>
-                    <th class="right" style="width: 20%;">Price <span class="currency-symbol-header"></span></th>
-                    <th class="right" style="width: 20%;">Amount <span class="currency-symbol-header"></span></th>
-                </tr>
+            <thead id="p-table-head">
+                <!-- Headers injected by JS -->
             </thead>
             <tbody id="p-items-body" class="table-body-wrapper"></tbody>
         </table>
@@ -557,6 +565,40 @@
         input.style.opacity = isChecked ? "1" : "0.3";
     }
 
+    function toggleInputs() {
+        const showQty = document.getElementById('toggle-qty').checked;
+        const showPrice = document.getElementById('toggle-price').checked;
+        
+        document.querySelectorAll('.item-qty').forEach(input => {
+            input.disabled = !showQty;
+            input.style.opacity = showQty ? "1" : "0.3";
+        });
+        
+        document.querySelectorAll('.item-price').forEach(input => {
+            input.disabled = !showPrice;
+            input.style.opacity = showPrice ? "1" : "0.3";
+        });
+
+        // If BOTH are hidden, the user wants to enter a flat amount
+        const bothHidden = !showQty && !showPrice;
+        document.querySelectorAll('.item-total').forEach(input => {
+            if (bothHidden) {
+                input.readOnly = false;
+                input.style.background = "var(--input-bg)"; // Un-gray it
+                input.style.opacity = "1";
+            } else {
+                input.readOnly = true;
+                input.style.background = "var(--input-disabled)"; // Gray it out
+                input.style.opacity = "1";
+                // Recalculate automatically based on Qty * Price
+                const row = input.parentElement;
+                const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+                const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                input.value = (qty * price).toFixed(2);
+            }
+        });
+    }
+
     function addItemRow() {
         const container = document.getElementById('items-container');
         const row = document.createElement('div');
@@ -569,14 +611,21 @@
             <button class="remove-btn" onclick="this.parentElement.remove()">×</button>
         `;
         container.appendChild(row);
+        
+        // Apply current toggle state to the new row
+        toggleInputs();
     }
 
     function calculateLiveTotals() {
         const rows = document.querySelectorAll('.item-row');
         rows.forEach(row => {
-            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-            const price = parseFloat(row.querySelector('.item-price').value) || 0;
-            row.querySelector('.item-total').value = (qty * price).toFixed(2);
+            const totalInput = row.querySelector('.item-total');
+            // Only auto-calculate if the user hasn't unlocked the total field
+            if (totalInput.readOnly) {
+                const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+                const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                totalInput.value = (qty * price).toFixed(2);
+            }
         });
     }
 
@@ -587,6 +636,9 @@
         // Save Currency
         const currency = document.getElementById('currency-select').value;
         localStorage.setItem('mardikian_currency', currency);
+        
+        const showQty = document.getElementById('toggle-qty').checked;
+        const showPrice = document.getElementById('toggle-price').checked;
 
         const supplierData = {
             name: supName,
@@ -652,10 +704,25 @@
             sigBlock.style.display = 'none';
         }
 
-        // Update table headers with Currency
-        document.querySelectorAll('.currency-symbol-header').forEach(el => {
-            el.textContent = currency;
-        });
+        // Update table headers with Currency & layout toggles
+        const thead = document.getElementById('p-table-head');
+        let headHTML = '<tr>';
+        
+        let descWidth = '50%';
+        if (!showQty && !showPrice) descWidth = '100%';
+        else if (!showQty || !showPrice) descWidth = '70%';
+
+        headHTML += `<th style="width: ${descWidth};">Description</th>`;
+        
+        if (showQty) {
+            headHTML += `<th class="right" style="width: 10%;">Qty</th>`;
+        }
+        if (showPrice) {
+            headHTML += `<th class="right" style="width: 20%;">Price ${currency}</th>`;
+        }
+        headHTML += `<th class="right" style="width: ${showPrice ? '20%' : '30%'};">Amount ${currency}</th>`;
+        headHTML += '</tr>';
+        thead.innerHTML = headHTML;
 
         // Items
         const tbody = document.getElementById('p-items-body');
@@ -664,32 +731,35 @@
 
         document.querySelectorAll('.item-row').forEach(row => {
             const desc = row.querySelector('.item-desc').value;
-            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-            const price = parseFloat(row.querySelector('.item-price').value) || 0;
-            const total = qty * price;
+            const total = parseFloat(row.querySelector('.item-total').value) || 0;
 
             if(desc || total > 0) {
                 subtotal += total;
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="width: 50%;">${desc}</td>
-                        <td class="right" style="width: 10%;">${qty}</td>
-                        <td class="right" style="width: 20%;">${price.toFixed(2)}</td>
-                        <td class="right" style="width: 20%;">${total.toFixed(2)}</td>
-                    </tr>
-                `;
+                let trHTML = '<tr>';
+                trHTML += `<td style="width: ${descWidth};">${desc}</td>`;
+                
+                if (showQty) {
+                    const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+                    trHTML += `<td class="right" style="width: 10%;">${qty}</td>`;
+                }
+                if (showPrice) {
+                    const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                    trHTML += `<td class="right" style="width: 20%;">${price.toFixed(2)}</td>`;
+                }
+                trHTML += `<td class="right" style="width: ${showPrice ? '20%' : '30%'};">${total.toFixed(2)}</td>`;
+                trHTML += '</tr>';
+                tbody.innerHTML += trHTML;
             }
         });
 
         // Inject a spacer row to stretch the vertical lines to the bottom
-        tbody.innerHTML += `
-            <tr class="spacer-row" style="height: 100%;">
-                <td style="width: 50%;"></td>
-                <td style="width: 10%;"></td>
-                <td style="width: 20%;"></td>
-                <td style="width: 20%;"></td>
-            </tr>
-        `;
+        let spacerHTML = '<tr class="spacer-row" style="height: 100%;">';
+        spacerHTML += `<td style="width: ${descWidth};"></td>`;
+        if (showQty) spacerHTML += '<td style="width: 10%;"></td>';
+        if (showPrice) spacerHTML += '<td style="width: 20%;"></td>';
+        spacerHTML += `<td style="width: ${showPrice ? '20%' : '30%'};"></td>`;
+        spacerHTML += '</tr>';
+        tbody.innerHTML += spacerHTML;
 
         const vatRate = parseFloat(document.getElementById('vat-rate').value) || 0;
         const vatAmount = subtotal * (vatRate / 100);
