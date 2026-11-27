@@ -107,28 +107,29 @@
             box-sizing: border-box;
         }
         
-        .preview-top-row { display: flex; justify-content: space-between; margin-bottom: 40px; }
-        .preview-left { width: 45%; padding-top: 45px; }
-        
-        .preview-right { 
-            width: 45%; 
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start; 
+        .preview-top-row { 
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            margin-bottom: 40px;
+            align-items: start;
         }
         
+        .preview-left { text-align: left; padding-top: 45px; }
+        .preview-center { text-align: left; }
+        
         .preview-title { font-size: 32px; font-weight: bold; color: #000; margin-bottom: 15px; }
+        .meta-data { font-size: 14px; line-height: 1.6; color: #333; }
+        
+        .preview-right { text-align: left; padding-top: 45px; }
         .supplier-name { font-weight: bold; font-size: 18px; margin-bottom: 5px; }
         
-        .meta-data { font-size: 14px; line-height: 1.6; color: #333; margin-bottom: 25px; text-align: left; }
-        
-        .client-data { font-size: 14px; line-height: 1.6; color: #333; text-align: left; width: 100%; }
-        .client-label { font-size: 12px; font-weight: bold; color: #888; text-transform: uppercase; margin-bottom: 5px; text-align: left; }
+        .client-data { font-size: 14px; line-height: 1.6; color: #333; }
+        .client-label { font-size: 12px; font-weight: bold; color: #888; text-transform: uppercase; margin-bottom: 5px; }
         
         /* Table styling */
         .table-container {
             border: 1px solid #ccc;
-            border-radius: 0px;
+            border-radius: 8px;
             overflow: hidden;
             height: 350px;
             margin-top: 30px;
@@ -136,80 +137,41 @@
             flex-direction: column;
         }
 
-        .preview-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            font-size: 13px; 
-            margin: 0; 
-            table-layout: fixed; 
-            height: 100%; 
-        }
-        
-        .preview-table thead {
-            background: #f9f9f9;
-            border-bottom: 2px solid #000;
-        }
+        .preview-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 0; table-layout: fixed; height: 100%; }
+        .preview-table thead { background: #f9f9f9; border-bottom: 2px solid #000; }
         
         .preview-table th { 
-            border-left: 1px solid #ddd; 
-            text-align: left; 
-            padding: 12px 15px; 
-            color: #000; 
-            box-sizing: border-box;
+            border-left: 1px solid #ddd; text-align: left; padding: 12px 15px; color: #000; box-sizing: border-box;
         }
         .preview-table th:first-child { border-left: none; }
         .preview-table th.right { text-align: right; }
         
-        /* Body rows */
-        .table-body-wrapper {
-            display: table-row-group;
-        }
+        .table-body-wrapper { display: table-row-group; }
         
         .preview-table td { 
-            border-bottom: 1px solid #eee; 
-            border-left: 1px solid #ddd; 
-            padding: 12px 15px; 
-            color: #000; 
-            box-sizing: border-box;
-            vertical-align: top;
+            border-bottom: 1px solid #eee; border-left: 1px solid #ddd; padding: 12px 15px; color: #000; box-sizing: border-box; vertical-align: top;
         }
         .preview-table td:first-child { border-left: none; }
         .preview-table td.right { text-align: right; }
         
-        /* Spacer row styles */
-        .spacer-row td {
-            border-bottom: none !important;
-        }
+        .spacer-row td { border-bottom: none !important; }
         
-        /* Totals block aligned to match the Total column */
-        .totals-container {
+        /* BOTTOM SECTION: Totals + Signature */
+        .bottom-section {
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
+            align-items: flex-end; /* This aligns the bottom of the signature with the bottom of the totals */
             margin-top: 20px;
-            padding-right: 15px;
         }
-        
-        .totals-table {
-            width: 40%; 
-            border-collapse: collapse;
-        }
-        
-        .totals-table td {
-            padding: 8px 0;
-            font-size: 14px;
-        }
-        
-        .totals-table td.label {
-            text-align: right;
-            padding-right: 15px;
-            color: #333;
-        }
-        
-        .totals-table td.value {
-            text-align: right;
+
+        .totals-container {
             width: 50%;
-            color: #000;
         }
+        
+        .totals-table { width: 100%; border-collapse: collapse; }
+        .totals-table td { padding: 8px 0; font-size: 14px; }
+        .totals-table td.label { text-align: right; padding-right: 15px; color: #333; }
+        .totals-table td.value { text-align: right; width: 50%; color: #000; }
         
         .total-final {
             font-weight: bold;
@@ -219,11 +181,30 @@
             padding: 10px 0 !important;
         }
         
-        .signature-block { margin-top: 60px; display: flex; justify-content: flex-start; }
-        .signature-inner { text-align: center; width: 250px; }
-        .signature-dots { border-bottom: 1px dotted #000; height: 40px; margin-bottom: 5px; }
-        .signature-name { font-weight: bold; font-size: 14px; text-transform: uppercase; color: #000; }
-        .signature-title { font-size: 12px; color: #666; }
+        /* Signature Block */
+        .signature-block { 
+            width: 40%;
+            display: flex; 
+            justify-content: flex-start; 
+        }
+        .signature-inner { 
+            text-align: center; 
+            width: 200px; 
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+        .signature-line { 
+            border-bottom: 1px solid #000; 
+            margin-bottom: 5px; 
+            width: 100%;
+        }
+        .signature-name { 
+            font-weight: bold; 
+            font-size: 14px; 
+            text-transform: uppercase; 
+            color: #000; 
+        }
 
         .footer-note { margin-top: 50px; font-size: 10px; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
         .hidden { display: none !important; }
@@ -243,13 +224,14 @@
             .item-qty, .item-price, .item-total { flex: 1; min-width: 0; padding: 8px; }
             .remove-btn { width: 40px; flex: none; margin-top: 0; height: auto; }
             
-            .preview-top-row { flex-direction: column; }
-            .preview-left, .preview-right { width: 100%; text-align: left; align-items: flex-start; }
-            .preview-left { padding-top: 0; }
-            .preview-right { margin-top: 20px; }
-            .meta-data { text-align: left; }
+            .preview-top-row { grid-template-columns: 1fr; gap: 20px; }
+            .preview-left, .preview-center, .preview-right { padding-top: 0; }
             #invoice-preview { padding: 20px; }
             .totals-table { width: 100%; }
+            
+            .bottom-section { flex-direction: column; align-items: flex-end; gap: 30px; }
+            .totals-container { width: 100%; }
+            .signature-block { width: 100%; justify-content: flex-end; }
         }
     </style>
 </head>
@@ -389,14 +371,17 @@
     </div>
 
     <button class="btn-primary" onclick="generateInvoice()">Preview & Generate PDF</button>
-
+    
+    <!-- Footer -->
     <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--note-text);">
-        Invoicing Tool - by © H.O.(OSKi)
+        Invoicing Tool - H.O.
     </div>
 </div>
 
 <div id="invoice-preview">
     <div class="preview-top-row">
+        
+        <!-- LEFT: Supplier -->
         <div class="preview-left">
             <div class="supplier-name" id="p-sup-name"></div>
             <div id="p-sup-address" style="font-size: 14px; color: #444;"></div>
@@ -406,14 +391,19 @@
             <div id="p-sup-vat" style="font-size: 14px; color: #444; margin-top: 5px;"></div>
             <div id="p-sup-tic" style="font-size: 14px; color: #444;"></div>
         </div>
-        <div class="preview-right">
+        
+        <!-- CENTER: INVOICE & Meta -->
+        <div class="preview-center">
             <div class="preview-title">INVOICE</div>
             <div class="meta-data">
                 <strong>Invoice No:</strong> <span id="p-inv-number"></span><br>
                 <strong>Date:</strong> <span id="p-inv-date"></span><br>
                 <span id="p-due-container"><strong>Due Date:</strong> <span id="p-inv-due"></span></span>
             </div>
-            
+        </div>
+
+        <!-- RIGHT: Bill To -->
+        <div class="preview-right">
             <div class="client-data">
                 <div class="client-label">Bill To:</div>
                 <div style="font-weight: bold; font-size: 16px;" id="p-cl-name"></div>
@@ -437,34 +427,38 @@
         </table>
     </div>
 
-    <!-- Totals aligned under the Total column -->
-    <div class="totals-container">
-        <table class="totals-table">
-            <tr>
-                <td class="label">Subtotal:</td>
-                <td class="value" id="p-subtotal"></td>
-            </tr>
-            <tr>
-                <td class="label">VAT:</td>
-                <td class="value" id="p-vat"></td>
-            </tr>
-            <tr class="total-final">
-                <td class="label">Total:</td>
-                <td class="value" id="p-total"></td>
-            </tr>
-        </table>
-    </div>
+    <!-- BOTTOM SECTION: Totals + Signature aligned to bottom -->
+    <div class="bottom-section">
+        
+        <!-- Signature Block (Left side) -->
+        <div id="p-signature-block" class="signature-block" style="display: none;">
+            <div class="signature-inner">
+                <div class="signature-line"></div>
+                <div class="signature-name" id="p-sig-name"></div>
+            </div>
+        </div>
 
-    <div id="p-signature-block" class="signature-block" style="display: none;">
-        <div class="signature-inner">
-            <div class="signature-dots"></div>
-            <div class="signature-name" id="p-sig-name"></div>
-            <div class="signature-title">(SALESMAN)</div>
+        <!-- Totals Block (Right side) -->
+        <div class="totals-container">
+            <table class="totals-table">
+                <tr>
+                    <td class="label">Subtotal:</td>
+                    <td class="value" id="p-subtotal"></td>
+                </tr>
+                <tr>
+                    <td class="label">VAT:</td>
+                    <td class="value" id="p-vat"></td>
+                </tr>
+                <tr class="total-final">
+                    <td class="label">Total:</td>
+                    <td class="value" id="p-total"></td>
+                </tr>
+            </table>
         </div>
     </div>
 
-    <div class="footer-note">
-        Invoicing Tool - by © H.O.
+    <div class="footer-note" style="margin-top: 120px;">
+        OSKi Invoicing tool — developed by © H.O.
     </div>
 
     <div style="text-align: center; margin-top: 30px;" class="no-print">
@@ -802,32 +796,22 @@
         clone.style.boxShadow = 'none';
         clone.style.margin = '0';
 
+        // Preserve 3-column grid in the clone
         const topRow = clone.querySelector('.preview-top-row');
         if(topRow) {
-            topRow.style.display = 'flex';
-            topRow.style.flexDirection = 'row';
-            topRow.style.justifyContent = 'space-between';
+            topRow.style.display = 'grid';
+            topRow.style.gridTemplateColumns = '1fr 1fr 1fr';
+            topRow.style.alignItems = 'start';
         }
-        const leftCol = clone.querySelector('.preview-left');
-        if(leftCol) { leftCol.style.width = '45%'; leftCol.style.textAlign = 'left'; leftCol.style.paddingTop = '45px'; }
         
+        const leftCol = clone.querySelector('.preview-left');
+        if(leftCol) { leftCol.style.textAlign = 'left'; leftCol.style.paddingTop = '45px'; }
+        
+        const centerCol = clone.querySelector('.preview-center');
+        if(centerCol) { centerCol.style.textAlign = 'left'; }
+
         const rightCol = clone.querySelector('.preview-right');
-        if(rightCol) { 
-            rightCol.style.width = '45%'; 
-            rightCol.style.marginTop = '0'; 
-            rightCol.style.display = 'flex'; 
-            rightCol.style.flexDirection = 'column'; 
-            rightCol.style.alignItems = 'flex-start'; 
-        }
-        const metaDataClone = clone.querySelector('.meta-data');
-        if(metaDataClone) {
-            metaDataClone.style.textAlign = 'left';
-        }
-        const clientDataClone = clone.querySelector('.client-data');
-        if(clientDataClone) {
-            clientDataClone.style.textAlign = 'left';
-            clientDataClone.style.width = '100%';
-        }
+        if(rightCol) { rightCol.style.textAlign = 'left'; rightCol.style.paddingTop = '45px'; }
 
         document.body.appendChild(clone);
 
